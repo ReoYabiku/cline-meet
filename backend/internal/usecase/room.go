@@ -6,25 +6,26 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cline-meet/backend/internal/domain/interfaces"
 	"github.com/cline-meet/backend/internal/domain/model"
+	"github.com/cline-meet/backend/internal/domain/repository"
+	"github.com/cline-meet/backend/internal/domain/service"
 	"github.com/google/uuid"
 )
 
 // Room handles room-related business logic
 type Room struct {
-	roomRepo         interfaces.RoomRepository
-	userRepo         interfaces.UserRepository
-	realtimeNotifier interfaces.RealtimeNotifier
-	sessionManager   interfaces.SessionManager
+	roomRepo         repository.Room
+	userRepo         repository.User
+	realtimeNotifier service.RealtimeNotifier
+	sessionManager   service.SessionManager
 }
 
 // NewRoom creates a new Room usecase
 func NewRoom(
-	roomRepo interfaces.RoomRepository,
-	userRepo interfaces.UserRepository,
-	realtimeNotifier interfaces.RealtimeNotifier,
-	sessionManager interfaces.SessionManager,
+	roomRepo repository.Room,
+	userRepo repository.User,
+	realtimeNotifier service.RealtimeNotifier,
+	sessionManager service.SessionManager,
 ) *Room {
 	return &Room{
 		roomRepo:         roomRepo,
@@ -88,7 +89,7 @@ func (r *Room) JoinRoom(ctx context.Context, userID, roomID uuid.UUID) error {
 	}
 
 	// Create or update user session
-	session := &interfaces.UserSession{
+	session := &service.UserSession{
 		UserID:   userID,
 		RoomID:   roomID,
 		IsHost:   room.IsHost(userID),
