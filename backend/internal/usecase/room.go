@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cline-meet/backend/internal/domain/model"
 	"github.com/cline-meet/backend/internal/domain/repository"
 	"github.com/cline-meet/backend/internal/domain/service"
-	"github.com/cline-meet/backend/internal/domain/model"
 	"github.com/google/uuid"
 )
 
