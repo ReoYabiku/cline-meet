@@ -52,18 +52,31 @@ graph TB
 - **Zustand**: 状態管理
 
 ### バックエンド (Go)
-- **Go 1.21**: 高性能・並行処理
+- **Go 1.24**: 高性能・並行処理
 - **Gin**: Webフレームワーク
 - **Gorilla WebSocket**: WebSocket実装
 - **GORM**: ORM
 - **go-redis**: Redis クライアント
 
-### インフラ (GCP)
+### インフラ (GCP + Kubernetes)
 - **GKE**: Kubernetesクラスター
 - **Cloud SQL (PostgreSQL)**: データベース
 - **Redis Memorystore**: セッション・リアルタイムデータ
-- **Cloud Storage**: 静的ファイル
-- **Cloud Load Balancer**: 負荷分散
+- **Container Registry**: Dockerイメージ保存
+- **Cloud Build**: CI/CDパイプライン
+
+## Kubernetesによる最適化
+
+### 不要になるクラウドリソース
+1. **Cloud Run** → **GKE Pods**: より細かい制御が可能
+2. **Cloud Load Balancing** → **Ingress Controller**: K8s内で負荷分散
+3. **Cloud CDN** → **Istio + Envoy**: Service Mesh内でキャッシュ
+
+### 新たに活用するK8sリソース
+1. **ConfigMap/Secret**: 設定管理
+2. **PersistentVolume**: ログ・一時ファイル保存
+3. **NetworkPolicy**: セキュリティ強化
+4. **ServiceMonitor**: Prometheus監視
 
 ## 核心となるSignalingHub設計
 
