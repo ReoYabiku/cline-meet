@@ -17,7 +17,7 @@ graph TB
         subgraph "Core Services"
             D[API Gateway]
             E[Auth Service]
-            F[SignalingHub Service]
+            F[RealtimeHub Service]
         end
         
         subgraph "Data Layer"
@@ -78,11 +78,11 @@ graph TB
 3. **NetworkPolicy**: セキュリティ強化
 4. **ServiceMonitor**: Prometheus監視
 
-## 核心となるSignalingHub設計
+## 核心となるRealtimeHub設計
 
-### 統合されたSignalingHub
+### 統合されたRealtimeHub
 ```go
-type SignalingHub struct {
+type RealtimeHub struct {
     // WebSocket接続管理
     clients    map[*Client]bool
     register   chan *Client
@@ -102,7 +102,7 @@ type SignalingHub struct {
 }
 
 type Client struct {
-    hub      *SignalingHub
+    hub      *RealtimeHub
     conn     *websocket.Conn
     send     chan []byte
     userID   string
@@ -216,18 +216,18 @@ CREATE INDEX idx_participants_room_id ON participants(room_id);
 
 #### 1. 水平スケーリング
 ```yaml
-# SignalingHub Pod設定
+# RealtimeHub Pod設定
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: signaling-hub
+  name: realtime-hub
 spec:
   replicas: 100  # 1Pod = 1万接続想定
   template:
     spec:
       containers:
-      - name: signaling-hub
-        image: gcr.io/project/signaling-hub:latest
+      - name: realtime-hub
+        image: gcr.io/project/realtime-hub:latest
         resources:
           requests:
             memory: "512Mi"
@@ -242,8 +242,8 @@ spec:
 
 #### 2. Redis Pub/Sub による Pod間通信
 ```go
-func (h *SignalingHub) setupRedisSubscription() {
-    pubsub := h.redis.Subscribe(context.Background(), "signaling_events")
+func (h *RealtimeHub) setupRedisSubscription() {
+    pubsub := h.redis.Subscribe(context.Background(), "realtime_events")
     
     go func() {
         for msg := range pubsub.Channel() {
@@ -256,16 +256,16 @@ func (h *SignalingHub) setupRedisSubscription() {
     }()
 }
 
-func (h *SignalingHub) publishToRedis(message Message) {
+func (h *RealtimeHub) publishToRedis(message Message) {
     data, _ := json.Marshal(message)
-    h.redis.Publish(context.Background(), "signaling_events", data)
+    h.redis.Publish(context.Background(), "realtime_events", data)
 }
 ```
 
 #### 3. 負荷分散戦略
 ```go
 // ルームIDベースのConsistent Hashing
-func (h *SignalingHub) getServerForRoom(roomID string) string {
+func (h *RealtimeHub) getServerForRoom(roomID string) string {
     hash := crc32.ChecksumIEEE([]byte(roomID))
     serverIndex := hash % uint32(len(h.serverList))
     return h.serverList[serverIndex]
@@ -279,10 +279,10 @@ func (h *SignalingHub) getServerForRoom(roomID string) string {
 apiVersion: v1
 kind: Service
 metadata:
-  name: signaling-hub-service
+  name: realtime-hub-service
 spec:
   selector:
-    app: signaling-hub
+    app: realtime-hub
   ports:
   - name: websocket
     port: 8080
@@ -298,12 +298,12 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: signaling-hub-hpa
+  name: realtime-hub-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: signaling-hub
+    name: realtime-hub
   minReplicas: 10
   maxReplicas: 200
   metrics:
@@ -327,7 +327,7 @@ spec:
 ### Day 1: 基盤構築
 **午前 (4時間)**:
 - Go プロジェクト初期化
-- SignalingHub基本実装
+- RealtimeHub基本実装
 - WebSocket接続処理
 - 基本的なメッセージルーティング
 
@@ -357,7 +357,7 @@ spec:
 steps:
 # Go バックエンドビルド
 - name: 'gcr.io/cloud-builders/go'
-  args: ['build', '-o', 'signaling-hub', './cmd/signaling-hub']
+  args: ['build', '-o', 'realtime-hub', './cmd/realtime-hub']
   env: ['CGO_ENABLED=0', 'GOOS=linux']
 
 # React フロントエンドビルド
@@ -367,7 +367,7 @@ steps:
 
 # Docker イメージビルド
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/signaling-hub:$COMMIT_SHA', '.']
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/realtime-hub:$COMMIT_SHA', '.']
 
 # GKE デプロイ
 - name: 'gcr.io/cloud-builders/gke-deploy'
