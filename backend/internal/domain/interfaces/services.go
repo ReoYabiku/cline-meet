@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/cline-meet/backend/internal/domain"
+	"github.com/cline-meet/backend/internal/domain/model"
 	"github.com/google/uuid"
 )
 
@@ -20,13 +20,13 @@ type RealtimeNotifier interface {
 	NotifyUserMuted(ctx context.Context, roomID, userID uuid.UUID, isMuted bool) error
 	
 	// BroadcastChatMessage broadcasts a chat message to all room participants
-	BroadcastChatMessage(ctx context.Context, message *domain.Message) error
+	BroadcastChatMessage(ctx context.Context, message *model.Message) error
 	
 	// SendDirectMessage sends a direct message to a specific user (for WebRTC signaling)
-	SendDirectMessage(ctx context.Context, message *domain.Message) error
+	SendDirectMessage(ctx context.Context, message *model.Message) error
 	
 	// NotifyRoomUpdate notifies participants about room setting changes
-	NotifyRoomUpdate(ctx context.Context, room *domain.Room) error
+	NotifyRoomUpdate(ctx context.Context, room *model.Room) error
 }
 
 // SessionManager defines the interface for managing user sessions

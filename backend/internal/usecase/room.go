@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cline-meet/backend/internal/domain"
 	"github.com/cline-meet/backend/internal/domain/interfaces"
+	"github.com/cline-meet/backend/internal/domain/model"
 	"github.com/google/uuid"
 )
 
@@ -35,7 +35,7 @@ func NewRoom(
 }
 
 // CreateRoom creates a new meeting room
-func (r *Room) CreateRoom(ctx context.Context, hostID uuid.UUID, name string, isWaitingRoom bool) (*domain.Room, error) {
+func (r *Room) CreateRoom(ctx context.Context, hostID uuid.UUID, name string, isWaitingRoom bool) (*model.Room, error) {
 	// Validate host exists
 	_, err := r.userRepo.GetByID(ctx, hostID)
 	if err != nil {
@@ -43,7 +43,7 @@ func (r *Room) CreateRoom(ctx context.Context, hostID uuid.UUID, name string, is
 	}
 
 	// Create room
-	room := domain.NewRoom(name, hostID, isWaitingRoom)
+	room := model.NewRoom(name, hostID, isWaitingRoom)
 
 	// Add host as first participant
 	if err := room.AddParticipant(hostID); err != nil {
@@ -93,7 +93,7 @@ func (r *Room) JoinRoom(ctx context.Context, userID, roomID uuid.UUID) error {
 		RoomID:   roomID,
 		IsHost:   room.IsHost(userID),
 		IsMuted:  false,
-		LastSeen: getCurrentTimestamp(),
+		LastSeen: time.Now().Unix(),
 	}
 
 	if err := r.sessionManager.UpdateSession(ctx, session); err != nil {
@@ -108,11 +108,6 @@ func (r *Room) JoinRoom(ctx context.Context, userID, roomID uuid.UUID) error {
 	}
 
 	return nil
-}
-
-// getCurrentTimestamp returns current Unix timestamp
-func getCurrentTimestamp() int64 {
-	return time.Now().Unix()
 }
 
 // LeaveRoom removes a user from a room
@@ -226,7 +221,7 @@ func (r *Room) UnmuteParticipant(ctx context.Context, userID, roomID uuid.UUID) 
 }
 
 // GetRoom retrieves a room by ID
-func (r *Room) GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, error) {
+func (r *Room) GetRoom(ctx context.Context, roomID uuid.UUID) (*model.Room, error) {
 	room, err := r.roomRepo.GetByID(ctx, roomID)
 	if err != nil {
 		return nil, fmt.Errorf("room not found: %w", err)
@@ -241,14 +236,14 @@ func (r *Room) GetRoom(ctx context.Context, roomID uuid.UUID) (*domain.Room, err
 }
 
 // GetUserRooms retrieves all rooms where the user is the host
-func (r *Room) GetUserRooms(ctx context.Context, userID uuid.UUID) ([]*domain.Room, error) {
+func (r *Room) GetUserRooms(ctx context.Context, userID uuid.UUID) ([]*model.Room, error) {
 	rooms, err := r.roomRepo.GetByHostID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user rooms: %w", err)
 	}
 
 	// Filter out expired rooms
-	var activeRooms []*domain.Room
+	var activeRooms []*model.Room
 	for _, room := range rooms {
 		if !room.IsExpired() {
 			activeRooms = append(activeRooms, room)
