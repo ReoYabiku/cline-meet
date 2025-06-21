@@ -264,23 +264,31 @@ func (h *RealtimeHub) publishToRedis(message Message) {
 
 #### 3. 負荷分散戦略
 ```go
-// ルームIDベースのConsistent Hashing
-func (h *RealtimeHub) getServerForRoom(roomID string) string {
-    hash := crc32.ChecksumIEEE([]byte(roomID))
-    serverIndex := hash % uint32(len(h.serverList))
-    return h.serverList[serverIndex]
+// Kubernetesの LoadBalancer による自動負荷分散
+// クライアントは任意のRealtimeHub Podに接続
+// Redis Pub/Sub により全Pod間でメッセージを同期
+func (h *RealtimeHub) handleMessage(client *Client, message Message) {
+    switch message.Type {
+    case "chat_message", "webrtc_offer", "webrtc_answer":
+        // 1. 自分のPod内の該当ルームに配信
+        h.broadcastToRoom(message.RoomID, message)
+        
+        // 2. 他のPodにも通知（Redis Pub/Sub）
+        h.publishToRedis(message)
+    }
 }
 ```
 
 ## Kubernetes構成
 
-### 1. Service定義
+### 1. Service定義（LoadBalancer使用）
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: realtime-hub-service
 spec:
+  type: LoadBalancer  # 自動負荷分散
   selector:
     app: realtime-hub
   ports:
@@ -290,7 +298,6 @@ spec:
   - name: http
     port: 8081
     targetPort: 8081
-  type: ClusterIP
 ```
 
 ### 2. HPA設定
